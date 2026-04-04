@@ -233,6 +233,7 @@ select.ai-select { padding: 8px 12px; border-radius: 6px; border: 0.5px solid va
             <option value="local">Local LLM (Ollama)</option>
             <option value="openai">OpenAI</option>
             <option value="anthropic">Anthropic</option>
+            <option value="opencode">OpenCode</option>
             <option value="custom">Custom API</option>
           </select>
           <select class="ai-select" id="model-select">
@@ -465,6 +466,9 @@ function updateProvider() {
   } else if (provider === 'anthropic') {
     apiConfig.style.display = 'block';
     modelSelect.innerHTML = '<option value="claude-3-opus">claude-3-opus</option><option value="claude-3-sonnet">claude-3-sonnet</option><option value="claude-3-haiku">claude-3-haiku</option>';
+  } else if (provider === 'opencode') {
+    apiConfig.style.display = 'block';
+    modelSelect.innerHTML = '<option value="opencode-4">opencode-4</option><option value="opencode-3.5">opencode-3.5</option>';
   } else {
     apiConfig.style.display = 'block';
     modelSelect.innerHTML = '<option value="custom">custom-model</option>';

@@ -64,6 +64,7 @@ class AIClient:
             "local": self._call_local,
             "openai": self._call_openai,
             "anthropic": self._call_anthropic,
+            "opencode": self._call_opencode,
             "custom": self._call_custom,
         }
 
@@ -185,6 +186,65 @@ class AIClient:
                 "model": model_name,
             }
 
+    async def _call_opencode(
+        self, query: str, model: Optional[str], context: Optional[Dict]
+    ) -> Dict[str, str]:
+        model_name = model or "opencode-4"
+        api_key = settings.OPENCODE_API_KEY
+        base_url = settings.OPENCODE_API_BASE
+
+        if not api_key:
+            return {
+                "result": "OpenCode API key not configured. Set OPENCODE_API_KEY in .env",
+                "provider": "opencode",
+                "model": model_name,
+            }
+
+        try:
+            import aiohttp
+
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}",
+            }
+
+            messages = self._build_messages(query, context)
+            payload = {
+                "model": model_name,
+                "messages": messages,
+                "max_tokens": 2000,
+            }
+
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    f"{base_url}/chat/completions", json=payload, headers=headers
+                ) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        result = (
+                            data.get("choices", [{}])[0]
+                            .get("message", {})
+                            .get("content", "")
+                        )
+                        return {
+                            "result": result,
+                            "provider": "opencode",
+                            "model": model_name,
+                        }
+                    else:
+                        error_text = await resp.text()
+                        return {
+                            "result": f"OpenCode API error: HTTP {resp.status} - {error_text}",
+                            "provider": "opencode",
+                            "model": model_name,
+                        }
+        except Exception as e:
+            return {
+                "result": f"OpenCode API error: {str(e)}",
+                "provider": "opencode",
+                "model": model_name,
+            }
+
     async def _call_custom(
         self, query: str, model: Optional[str], context: Optional[Dict]
     ) -> Dict[str, str]:
@@ -303,6 +363,11 @@ async def list_providers():
                 "config_key": "ANTHROPIC_API_KEY",
             },
             {
+                "name": "opencode",
+                "description": "OpenCode AI models",
+                "config_key": "OPENCODE_API_KEY",
+            },
+            {
                 "name": "custom",
                 "description": "Custom API endpoint",
                 "config_keys": ["AI_API_BASE", "AI_API_KEY"],
@@ -364,6 +429,12 @@ class AIInvestigatorModule(ModuleBase):
 
     def get_simulated_data(self):
         return {
-            "available_providers": ["local", "openai", "anthropic", "custom"],
+            "available_providers": [
+                "local",
+                "openai",
+                "anthropic",
+                "opencode",
+                "custom",
+            ],
             "default_provider": settings.AI_PROVIDER or "local",
         }

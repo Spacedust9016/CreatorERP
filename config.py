@@ -17,6 +17,8 @@ class Settings(BaseSettings):
 
     OPENAI_API_KEY: Optional[str] = None
     ANTHROPIC_API_KEY: Optional[str] = None
+    OPENCODE_API_KEY: Optional[str] = None
+    OPENCODE_API_BASE: str = "https://api.opencode.ai/v1"
 
     SIMULATED_DATA: bool = True
 
