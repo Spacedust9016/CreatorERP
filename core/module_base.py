@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Type
 from sqlalchemy.orm import Session
-from core.database import Base
+from core.database import Base, engine
 
 
 class ModuleBase(ABC):
