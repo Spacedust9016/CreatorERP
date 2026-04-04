@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Creator ERP</title>
+  <style>
+:root {
+  --color-text-primary: #e5e5e5;
+  --color-text-secondary: #a3a3a3;
+  --color-text-success: #22c55e;
+  --color-text-danger: #ef4444;
+  --color-text-warning: #f59e0b;
+  --color-text-info: #3b82f6;
+  --color-background-primary: #171717;
+  --color-background-secondary: #262626;
+  --color-border-tertiary: #404040;
+  --color-border-info: #3b82f6;
+  --color-background-success: rgba(34, 197, 94, 0.15);
+  --color-background-warning: rgba(245, 158, 11, 0.15);
+  --color-background-info: rgba(59, 130, 246, 0.15);
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+  --font-sans: system-ui, -apple-system, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); background: #0a0a0a; color: var(--color-text-primary); min-height: 100vh; }
+.container { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+.nav { display: flex; gap: 2px; border-bottom: 0.5px solid var(--color-border-tertiary); margin-bottom: 1.5rem; flex-wrap: wrap; }
+.nav-tab { padding: 8px 14px; font-size: 13px; color: var(--color-text-secondary); cursor: pointer; border-bottom: 2px solid transparent; background: none; border-top: none; border-left: none; border-right: none; font-family: var(--font-sans); border-radius: 0; }
+.nav-tab.active { color: var(--color-text-primary); border-bottom-color: var(--color-text-primary); font-weight: 500; }
+.nav-tab:hover { color: var(--color-text-primary); }
+.section { display: none; }
+.section.active { display: block; }
+.metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
+.metric-card { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 14px; }
+.mlabel { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+.mvalue { font-size: 22px; font-weight: 500; color: var(--color-text-primary); }
+.mdelta { font-size: 11px; color: var(--color-text-success); margin-top: 3px; }
+.mdelta.neg { color: var(--color-text-danger); }
+.mdelta.neu { color: var(--color-text-secondary); }
+.platform-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+.pcard { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem; }
+.pheader { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.picon { width: 30px; height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; flex-shrink: 0; }
+.pname { font-size: 13px; font-weight: 500; color: var(--color-text-primary); }
+.phandle { font-size: 11px; color: var(--color-text-secondary); }
+.sr { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
+.sr:last-child { border-bottom: none; }
+.sl { font-size: 12px; color: var(--color-text-secondary); }
+.sv { font-size: 12px; font-weight: 500; color: var(--color-text-primary); }
+.stitle { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
+table { width: 100%; font-size: 13px; border-collapse: collapse; }
+td, th { padding: 8px 6px; text-align: left; }
+th { font-size: 11px; color: var(--color-text-secondary); font-weight: 400; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 0.5px solid var(--color-border-tertiary); }
+td { border-bottom: 0.5px solid var(--color-border-tertiary); color: var(--color-text-primary); }
+tr:last-child td { border-bottom: none; }
+.badge { font-size: 10px; padding: 2px 7px; border-radius: 4px; display: inline-block; }
+.bg { background: var(--color-background-success); color: var(--color-text-success); }
+.ba { background: var(--color-background-warning); color: var(--color-text-warning); }
+.pbar { height: 3px; background: var(--color-background-secondary); border-radius: 2px; margin-top: 5px; }
+.pfill { height: 100%; border-radius: 2px; }
+.ccard { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
+.crow { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
+.crow:last-child { border-bottom: none; }
+.btn { font-size: 12px; padding: 6px 12px; border-radius: 6px; border: 0.5px solid var(--color-border-tertiary); background: var(--color-background-secondary); color: var(--color-text-primary); cursor: pointer; }
+.btn:hover { background: var(--color-background-primary); }
+.btn-primary { background: var(--color-text-primary); color: #0a0a0a; }
+.ai-section { margin-top: 2rem; padding-top: 1.5rem; border-top: 0.5px solid var(--color-border-tertiary); }
+.ai-input { width: 100%; padding: 12px; border-radius: 8px; border: 0.5px solid var(--color-border-tertiary); background: var(--color-background-secondary); color: var(--color-text-primary); font-family: var(--font-sans); font-size: 13px; resize: vertical; min-height: 80px; }
+.ai-response { margin-top: 1rem; padding: 1rem; background: var(--color-background-secondary); border-radius: 8px; border-left: 3px solid var(--color-text-info); }
+.loading { opacity: 0.6; }
+select.ai-select { padding: 8px 12px; border-radius: 6px; border: 0.5px solid var(--color-border-tertiary); background: var(--color-background-secondary); color: var(--color-text-primary); font-size: 12px; }
+.header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+@media (max-width: 600px) {
+  .metric-grid { grid-template-columns: repeat(2, 1fr); }
+  .platform-row { grid-template-columns: 1fr; }
+}
+  </style>
+</head>
+<body>
+  <div class="container" style="padding: 1rem 0;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; padding-bottom:1rem; border-bottom:0.5px solid var(--color-border-tertiary);">
+      <div>
+        <div style="font-size:18px; font-weight:500; color:var(--color-text-primary);">Creator ERP</div>
+        <div style="font-size:12px; color:var(--color-text-secondary); margin-top:2px;">April 2026 -- all platforms</div>
+      </div>
+      <div class="header-actions">
+        <button class="btn" onclick="analyzeDashboard()">Analyze</button>
+        <button class="btn btn-primary" onclick="showAIInvestigator()">AI Investigator</button>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <button class="nav-tab active" onclick="switchTab('overview',this)">Overview</button>
+      <button class="nav-tab" onclick="switchTab('social',this)">Social media</button>
+      <button class="nav-tab" onclick="switchTab('courses',this)">Courses</button>
+      <button class="nav-tab" onclick="switchTab('newsletter',this)">Newsletter</button>
+      <button class="nav-tab" onclick="switchTab('calendar',this)">Content calendar</button>
+      <button class="nav-tab" onclick="switchTab('ai',this)">AI Investigator</button>
+    </nav>
+
+    <!-- OVERVIEW -->
+    <div class="section active" id="tab-overview">
+      <div class="metric-grid">
+        <div class="metric-card"><div class="mlabel">Total reach</div><div class="mvalue" id="total-reach">124K</div><div class="mdelta" id="reach-change">+3.2% this week</div></div>
+        <div class="metric-card"><div class="mlabel">Monthly revenue</div><div class="mvalue" id="monthly-revenue">$4,820</div><div class="mdelta" id="revenue-change">+12% vs last month</div></div>
+        <div class="metric-card"><div class="mlabel">Newsletter subs</div><div class="mvalue" id="newsletter-subs">8,340</div><div class="mdelta" id="subs-change">+142 this week</div></div>
+        <div class="metric-card"><div class="mlabel">Course students</div><div class="mvalue" id="course-students">2,190</div><div class="mdelta" id="students-change">+38 this month</div></div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:1.5rem;">
+        <div>
+          <div class="stitle">Revenue sources</div>
+          <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:8px; font-size:12px; color:var(--color-text-secondary);">
+            <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#378ADD;display:inline-block;"></span>Udemy $3,940</span>
+            <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#E24B4A;display:inline-block;"></span>AdSense $620</span>
+            <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#1D9E75;display:inline-block;"></span>Sponsors $260</span>
+          </div>
+          <div style="position:relative;height:180px;"><canvas id="revenueChart"></canvas></div>
+        </div>
+        <div>
+          <div class="stitle">Audience by platform</div>
+          <div style="position:relative;height:210px;"><canvas id="audienceChart"></canvas></div>
+        </div>
+      </div>
+      <div class="stitle">Recent activity</div>
+      <table id="activity-table">
+        <thead><tr><th>Event</th><th>Platform</th><th>Time</th><th>Impact</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- SOCIAL -->
+    <div class="section" id="tab-social">
+      <div class="platform-row" id="platform-cards"></div>
+      <div class="stitle">Engagement trend (12 weeks)</div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:8px;font-size:12px;color:var(--color-text-secondary);">
+        <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#E24B4A;display:inline-block;"></span>YouTube</span>
+        <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#D85A30;display:inline-block;"></span>Instagram</span>
+        <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#888780;display:inline-block;"></span>X</span>
+      </div>
+      <div style="position:relative;height:200px;margin-bottom:1.5rem;"><canvas id="engagementChart"></canvas></div>
+      <div class="stitle">Top performing posts</div>
+      <table id="posts-table">
+        <thead><tr><th>Content</th><th>Platform</th><th>Reach</th><th>Eng. rate</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- COURSES -->
+    <div class="section" id="tab-courses">
+      <div class="metric-grid">
+        <div class="metric-card"><div class="mlabel">Monthly revenue</div><div class="mvalue">$3,940</div><div class="mdelta">from Udemy</div></div>
+        <div class="metric-card"><div class="mlabel">Total students</div><div class="mvalue">2,190</div><div class="mdelta">+38 this month</div></div>
+        <div class="metric-card"><div class="mlabel">Avg rating</div><div class="mvalue">4.7</div><div class="mdelta">across all courses</div></div>
+        <div class="metric-card"><div class="mlabel">Completion rate</div><div class="mvalue">68%</div><div class="mdelta">+4% vs last month</div></div>
+      </div>
+      <div class="stitle">Courses</div>
+      <div class="ccard" id="courses-list"></div>
+      <div class="stitle">Revenue trend (8 months)</div>
+      <div style="position:relative;height:200px;"><canvas id="courseRevenueChart"></canvas></div>
+    </div>
+
+    <!-- NEWSLETTER -->
+    <div class="section" id="tab-newsletter">
+      <div class="metric-grid">
+        <div class="metric-card"><div class="mlabel">Subscribers</div><div class="mvalue">8,340</div><div class="mdelta">+142 this week</div></div>
+        <div class="metric-card"><div class="mlabel">Open rate</div><div class="mvalue">58%</div><div class="mdelta">+6% above avg</div></div>
+        <div class="metric-card"><div class="mlabel">Click rate</div><div class="mvalue">14%</div><div class="mdelta">3x industry avg</div></div>
+        <div class="metric-card"><div class="mlabel">Churn rate</div><div class="mvalue">0.8%</div><div class="mdelta neu">monitor this</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:1.5rem;">
+        <div>
+          <div class="stitle">Subscriber growth</div>
+          <div style="position:relative;height:180px;"><canvas id="subsChart"></canvas></div>
+        </div>
+        <div>
+          <div class="stitle">Last 5 issues</div>
+          <table>
+            <thead><tr><th>Issue</th><th>Opens</th><th>Clicks</th></tr></thead>
+            <tbody>
+              <tr><td>#48--Productivity</td><td style="color:var(--color-text-success);">62%</td><td>18%</td></tr>
+              <tr><td>#47--Tools roundup</td><td style="color:var(--color-text-success);">58%</td><td>14%</td></tr>
+              <tr><td>#46--Tutorial deep-dive</td><td>51%</td><td>11%</td></tr>
+              <tr><td>#45--Case study</td><td style="color:var(--color-text-success);">64%</td><td>21%</td></tr>
+              <tr><td>#44--Opinion piece</td><td>48%</td><td>9%</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="stitle">Subscriber sources</div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:8px;font-size:12px;color:var(--color-text-secondary);">
+        <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#E24B4A;display:inline-block;"></span>YouTube 38%</span>
+        <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#D85A30;display:inline-block;"></span>Instagram 28%</span>
+        <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#888780;display:inline-block;"></span>X 18%</span>
+        <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#A435F0;display:inline-block;"></span>Udemy 11%</span>
+        <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#B4B2A9;display:inline-block;"></span>Organic 5%</span>
+      </div>
+      <div style="position:relative;height:200px;max-width:320px;"><canvas id="sourceChart"></canvas></div>
+    </div>
+
+    <!-- CALENDAR -->
+    <div class="section" id="tab-calendar">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+        <div style="font-size:15px;font-weight:500;color:var(--color-text-primary);">April 2026</div>
+        <button class="btn" onclick="autoPlan()">Auto-plan next month</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px;" id="calWeekdays"></div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:1.5rem;" id="calGrid"></div>
+      <div style="display:flex;gap:16px;font-size:11px;color:var(--color-text-secondary);margin-bottom:1rem;">
+        <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;background:var(--color-background-info);display:inline-block;"></span>Content scheduled</span>
+        <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;border:1.5px solid var(--color-border-info);display:inline-block;"></span>Today</span>
+      </div>
+      <div class="stitle">Upcoming posts</div>
+      <table id="upcoming-table">
+        <thead><tr><th>Date</th><th>Content</th><th>Platform</th><th>Status</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- AI INVESTIGATOR -->
+    <div class="section" id="tab-ai">
+      <div class="metric-grid">
+        <div class="metric-card"><div class="mlabel">AI Provider</div><div class="mvalue" id="ai-provider">Local</div><div class="mdelta neu">Ollama</div></div>
+        <div class="metric-card"><div class="mlabel">Model</div><div class="mvalue" id="ai-model">llama2</div><div class="mdelta neu">Active</div></div>
+        <div class="metric-card"><div class="mlabel">Status</div><div class="mvalue" style="color:var(--color-text-success);">Ready</div><div class="mdelta neu">Configured</div></div>
+      </div>
+      
+      <div class="stitle">Configure AI Provider</div>
+      <div style="background:var(--color-background-secondary);border-radius:8px;padding:1rem;margin-bottom:1.5rem;">
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+          <select class="ai-select" id="provider-select" onchange="updateProvider()">
+            <option value="local">Local LLM (Ollama)</option>
+            <option value="openai">OpenAI</option>
+            <option value="anthropic">Anthropic</option>
+            <option value="custom">Custom API</option>
+          </select>
+          <select class="ai-select" id="model-select">
+            <option value="llama2">llama2</option>
+            <option value="llama3">llama3</option>
+            <option value="mistral">mistral</option>
+            <option value="codellama">codellama</option>
+          </select>
+        </div>
+        <div id="api-config" style="display:none;">
+          <input type="text" id="api-key-input" placeholder="API Key" class="ai-input" style="min-height:auto;margin-bottom:8px;">
+          <input type="text" id="api-base-input" placeholder="API Base URL (optional)" class="ai-input" style="min-height:auto;">
+        </div>
+      </div>
+
+      <div class="stitle">Quick Analysis</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;">
+        <button class="btn" onclick="analyzeFromInvestigator('dashboard')">Dashboard Insights</button>
+        <button class="btn" onclick="analyzeFromInvestigator('content')">Content Strategy</button>
+        <button class="btn" onclick="analyzeFromInvestigator('growth')">Growth Opportunities</button>
+        <button class="btn" onclick="analyzeFromInvestigator('revenue')">Revenue Analysis</button>
+      </div>
+
+      <div class="stitle">Custom Query</div>
+      <textarea class="ai-input" id="ai-query" placeholder="Ask anything about your creator business..."></textarea>
+      <div style="margin-top:12px;">
+        <button class="btn btn-primary" onclick="runAIQuery()">Investigate</button>
+      </div>
+
+      <div class="ai-response" id="ai-response" style="display:none;">
+        <div class="stitle">AI Analysis</div>
+        <div id="ai-result" style="white-space:pre-wrap;font-size:13px;line-height:1.6;"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <script>
+const API_BASE = 'http://localhost:8000/api';
+const chartsInited = {};
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+  initCharts(name);
+}
+
+function mkChart(id, type, data, opts) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  new Chart(el, { type, data, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, ...opts } });
+}
+
+function initCharts(tab) {
+  if (chartsInited[tab]) return;
+  chartsInited[tab] = true;
+
+  if (tab === 'overview') {
+    mkChart('revenueChart', 'doughnut', {
+      datasets: [{ data: [3940, 620, 260], backgroundColor: ['#378ADD','#E24B4A','#1D9E75'], borderWidth: 0, hoverOffset: 4 }]
+    }, {});
+    mkChart('audienceChart', 'bar', {
+      labels: ['YouTube','Instagram','X'],
+      datasets: [{ data: [71200, 34200, 18400], backgroundColor: ['#E24B4A','#D85A30','#378ADD'], borderRadius: 4, borderWidth: 0 }]
+    }, { scales: { y: { display: false }, x: { grid: { display: false }, ticks: { color: '#888' } } } });
+  }
+
+  if (tab === 'social') {
+    const wks = ['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12'];
+    mkChart('engagementChart', 'line', {
+      labels: wks,
+      datasets: [
+        { label: 'YouTube', data: [120,145,160,175,200,215,210,240,258,275,295,320], borderColor: '#E24B4A', tension: 0.4, fill: false, pointRadius: 0, borderWidth: 2 },
+        { label: 'Instagram', data: [85,95,115,132,150,158,155,172,185,198,210,222], borderColor: '#D85A30', tension: 0.4, fill: false, pointRadius: 0, borderWidth: 2 },
+        { label: 'X', data: [40,50,55,62,70,78,75,88,90,102,112,122], borderColor: '#888780', tension: 0.4, fill: false, pointRadius: 0, borderWidth: 2 }
+      ]
+    }, { scales: { y: { grid: { color: 'rgba(128,128,128,0.12)' }, ticks: { color: '#888', font: { size: 11 } } }, x: { grid: { display: false }, ticks: { color: '#888', font: { size: 11 } } } } });
+  }
+
+  if (tab === 'courses') {
+    mkChart('courseRevenueChart', 'bar', {
+      labels: ['Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'],
+      datasets: [{ data: [1800,2100,2400,3100,2800,3200,3600,3940], backgroundColor: '#378ADD', borderRadius: 4, borderWidth: 0 }]
+    }, { scales: { y: { grid: { color: 'rgba(128,128,128,0.12)' }, ticks: { color: '#888', font: { size: 11 }, callback: v => '$' + (v/1000).toFixed(1) + 'K' } }, x: { grid: { display: false }, ticks: { color: '#888', font: { size: 11 }, autoSkip: false } } } });
+  }
+
+  if (tab === 'newsletter') {
+    mkChart('subsChart', 'line', {
+      labels: ['Oct','Nov','Dec','Jan','Feb','Mar','Apr'],
+      datasets: [{ data: [4200,4900,5500,6100,6900,7800,8340], borderColor: '#1D9E75', fill: true, backgroundColor: 'rgba(29,158,117,0.08)', tension: 0.4, pointRadius: 2, borderWidth: 2 }]
+    }, { scales: { y: { grid: { color: 'rgba(128,128,128,0.12)' }, ticks: { color: '#888', font: { size: 11 }, callback: v => (v/1000).toFixed(1) + 'K' } }, x: { grid: { display: false }, ticks: { color: '#888', font: { size: 11 } } } } });
+    mkChart('sourceChart', 'doughnut', {
+      datasets: [{ data: [38,28,18,11,5], backgroundColor: ['#E24B4A','#D85A30','#888780','#A435F0','#B4B2A9'], borderWidth: 0, hoverOffset: 4 }]
+    }, {});
+  }
+}
+
+function buildCalendar() {
+  const wd = document.getElementById('calWeekdays');
+  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d => {
+    const el = document.createElement('div');
+    el.style.cssText = 'text-align:center;font-size:10px;color:var(--color-text-secondary);padding:4px 0;';
+    el.textContent = d;
+    wd.appendChild(el);
+  });
+
+  const grid = document.getElementById('calGrid');
+  const contentDays = [3,5,7,8,10,12,14,15,17,19,21,22,24,26,28,29];
+  const today = 5;
+  const startDay = 3;
+
+  for (let i = 0; i < startDay; i++) {
+    const e = document.createElement('div');
+    e.style.cssText = 'aspect-ratio:1;';
+    grid.appendChild(e);
+  }
+  for (let d = 1; d <= 30; d++) {
+    const cell = document.createElement('div');
+    const hasCont = contentDays.includes(d);
+    const isToday = d === today;
+    cell.style.cssText = `aspect-ratio:1;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;background:${hasCont ? 'var(--color-background-info)' : 'var(--color-background-secondary)'};border:${isToday ? '1.5px solid var(--color-border-info)' : '0.5px solid transparent'};color:${hasCont ? 'var(--color-text-info)' : 'var(--color-text-secondary)'};font-weight:${isToday ? '500' : '400'};`;
+    cell.textContent = d;
+    grid.appendChild(cell);
+  }
+}
+
+function loadPlatformCards() {
+  const platforms = [
+    { name: 'X', handle: '@yourusername', followers: '18,400', impressions: '42K', engagements: '1,240', rate: '2.9%', visits: '3,100', bg: '#000', fg: '#fff' },
+    { name: 'Instagram', handle: '@yourusername', followers: '34,200', impressions: '67K', engagements: '4,820', rate: '6.8%', visits: '2,100', bg: '#E1306C', fg: '#fff' },
+    { name: 'YouTube', handle: 'Your Channel', followers: '71,200', impressions: '184K', engagements: '9,200', rate: '4.7%', visits: '-', bg: '#FF0000', fg: '#fff' }
+  ];
+  const container = document.getElementById('platform-cards');
+  platforms.forEach(p => {
+    container.innerHTML += `
+      <div class="pcard">
+        <div class="pheader">
+          <div class="picon" style="background:${p.bg};color:${p.fg};">${p.name.substring(0,2)}</div>
+          <div><div class="pname">${p.name}</div><div class="phandle">${p.handle}</div></div>
+        </div>
+        <div class="sr"><span class="sl">Followers</span><span class="sv">${p.followers}</span></div>
+        <div class="sr"><span class="sl">Impressions (7d)</span><span class="sv">${p.impressions}</span></div>
+        <div class="sr"><span class="sl">Engagements</span><span class="sv">${p.engagements}</span></div>
+        <div class="sr"><span class="sl">Eng. rate</span><span class="sv" style="color:var(--color-text-success);">${p.rate}</span></div>
+        <div class="sr"><span class="sl">Profile visits</span><span class="sv">${p.visits}</span></div>
+      </div>`;
+  });
+}
+
+function loadCourses() {
+  const courses = [
+    { title: 'Complete guide to X', hours: '8.5', students: 840, rating: 4.8, revenue: '$1,680', badge: 'Bestseller', pct: 84 },
+    { title: "Beginner's crash course", hours: '3.2', students: 920, rating: 4.6, revenue: '$1,470', badge: 'Hot', pct: 92 },
+    { title: 'Advanced masterclass', hours: '12', students: 430, rating: 4.7, revenue: '$790', badge: 'Growing', pct: 43 }
+  ];
+  const container = document.getElementById('courses-list');
+  courses.forEach(c => {
+    const badgeClass = c.badge === 'Bestseller' ? 'bg' : 'ba';
+    const barColor = c.badge === 'Bestseller' ? '#378ADD' : c.badge === 'Hot' ? '#1D9E75' : '#BA7517';
+    container.innerHTML += `
+      <div class="crow">
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:500;margin-bottom:3px;">${c.title}</div>
+          <div style="font-size:11px;color:var(--color-text-secondary);">${c.hours} hrs -- ${c.students} students</div>
+          <div class="pbar"><div class="pfill" style="width:${c.pct}%;background:${barColor};"></div></div>
+        </div>
+        <div style="text-align:right;min-width:80px;">
+          <div style="font-size:14px;font-weight:500;">${c.revenue}</div>
+          <div style="font-size:11px;color:var(--color-text-secondary);">-- ${c.rating}</div>
+          <span class="badge ${badgeClass}">${c.badge}</span>
+        </div>
+      </div>`;
+  });
+}
+
+function loadActivity() {
+  const activity = [
+    { event: 'New video published', platform: 'YouTube', time: '2h ago', impact: '+480 views', positive: true },
+    { event: 'Newsletter #48 sent', platform: 'Email', time: 'Yesterday', impact: '62% open rate', positive: true },
+    { event: '12 new enrollments', platform: 'Udemy', time: 'Yesterday', impact: '+$180 revenue', positive: true },
+    { event: 'Thread went viral', platform: 'X', time: '2d ago', impact: '+2.4K impressions', positive: true },
+    { event: 'Reel published', platform: 'Instagram', time: '3d ago', impact: '820 plays', positive: false }
+  ];
+  const tbody = document.querySelector('#activity-table tbody');
+  activity.forEach(a => {
+    tbody.innerHTML += `<tr><td>${a.event}</td><td>${a.platform}</td><td>${a.time}</td><td style="color:${a.positive ? 'var(--color-text-success)' : 'var(--color-text-secondary)'};">${a.impact}</td></tr>`;
+  });
+}
+
+function loadPosts() {
+  const posts = [
+    { content: 'Thread: productivity hacks', platform: 'X', reach: '24K', rate: '4.1%', positive: true },
+    { content: 'Behind the scenes reel', platform: 'Instagram', reach: '18K', rate: '6.8%', positive: true },
+    { content: 'Tutorial: build X in 10 min', platform: 'YouTube', reach: '52K', rate: '7.2%', positive: true },
+    { content: 'Carousel: 5 tools I use', platform: 'Instagram', reach: '11K', rate: '3.4%', positive: false }
+  ];
+  const tbody = document.querySelector('#posts-table tbody');
+  posts.forEach(p => {
+    tbody.innerHTML += `<tr><td>${p.content}</td><td>${p.platform}</td><td>${p.reach}</td><td style="color:${p.positive ? 'var(--color-text-success)' : 'var(--color-text-secondary)'};">${p.rate}</td></tr>`;
+  });
+}
+
+function loadUpcoming() {
+  const upcoming = [
+    { date: 'Apr 7', content: 'Video: 10 tools for creators', platform: 'YouTube', status: 'Draft', statusColor: 'var(--color-text-warning)' },
+    { date: 'Apr 8', content: 'Newsletter #49', platform: 'Email', status: 'Ready', statusColor: 'var(--color-text-success)' },
+    { date: 'Apr 9', content: 'Thread: 1-year lessons', platform: 'X', status: 'Draft', statusColor: 'var(--color-text-warning)' },
+    { date: 'Apr 10', content: 'Quick tip reel', platform: 'Instagram', status: 'Scheduled', statusColor: 'var(--color-text-success)' },
+    { date: 'Apr 14', content: 'Tutorial: beginner series ep.3', platform: 'YouTube', status: 'Idea', statusColor: 'var(--color-text-secondary)' }
+  ];
+  const tbody = document.querySelector('#upcoming-table tbody');
+  upcoming.forEach(u => {
+    tbody.innerHTML += `<tr><td>${u.date}</td><td>${u.content}</td><td>${u.platform}</td><td style="color:${u.statusColor};">${u.status}</td></tr>`;
+  });
+}
+
+function updateProvider() {
+  const provider = document.getElementById('provider-select').value;
+  const apiConfig = document.getElementById('api-config');
+  const modelSelect = document.getElementById('model-select');
+  
+  if (provider === 'local') {
+    apiConfig.style.display = 'none';
+    modelSelect.innerHTML = '<option value="llama2">llama2</option><option value="llama3">llama3</option><option value="mistral">mistral</option><option value="codellama">codellama</option>';
+  } else if (provider === 'openai') {
+    apiConfig.style.display = 'block';
+    modelSelect.innerHTML = '<option value="gpt-4-turbo">gpt-4-turbo</option><option value="gpt-4">gpt-4</option><option value="gpt-3.5-turbo">gpt-3.5-turbo</option>';
+  } else if (provider === 'anthropic') {
+    apiConfig.style.display = 'block';
+    modelSelect.innerHTML = '<option value="claude-3-opus">claude-3-opus</option><option value="claude-3-sonnet">claude-3-sonnet</option><option value="claude-3-haiku">claude-3-haiku</option>';
+  } else {
+    apiConfig.style.display = 'block';
+    modelSelect.innerHTML = '<option value="custom">custom-model</option>';
+  }
+}
+
+async function analyzeDashboard() {
+  const responseDiv = document.getElementById('ai-response');
+  const resultDiv = document.getElementById('ai-result');
+  responseDiv.style.display = 'block';
+  resultDiv.textContent = 'Analyzing dashboard data...';
+  
+  try {
+    const resp = await fetch(`${API_BASE}/ai/analyze/dashboard`, { method: 'POST' });
+    const data = await resp.json();
+    resultDiv.textContent = data.result || JSON.stringify(data, null, 2);
+  } catch (e) {
+    resultDiv.textContent = 'Error: Could not connect to AI service. Ensure backend is running and AI provider is configured.\n\n' + e.message;
+  }
+}
+
+function showAIInvestigator() {
+  switchTab('ai', document.querySelectorAll('.nav-tab')[5]);
+}
+
+async function analyzeFromInvestigator(type) {
+  let query = '';
+  if (type === 'dashboard') query = 'Analyze my overall dashboard metrics and provide key insights';
+  else if (type === 'content') query = 'Analyze my content strategy and suggest improvements';
+  else if (type === 'growth') query = 'What are my best growth opportunities based on current metrics?';
+  else if (type === 'revenue') query = 'Analyze my revenue streams and suggest optimization strategies';
+  
+  document.getElementById('ai-query').value = query;
+  await runAIQuery();
+}
+
+async function runAIQuery() {
+  const query = document.getElementById('ai-query').value;
+  if (!query) return;
+  
+  const provider = document.getElementById('provider-select').value;
+  const model = document.getElementById('model-select').value;
+  const responseDiv = document.getElementById('ai-response');
+  const resultDiv = document.getElementById('ai-result');
+  
+  responseDiv.style.display = 'block';
+  resultDiv.textContent = 'Processing...';
+  
+  try {
+    const resp = await fetch(`${API_BASE}/ai/investigate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, provider, model })
+    });
+    const data = await resp.json();
+    resultDiv.textContent = data.result || JSON.stringify(data, null, 2);
+  } catch (e) {
+    resultDiv.textContent = 'Error: Could not connect to AI service. Ensure backend is running.\n\n' + e.message;
+  }
+}
+
+function autoPlan() {
+  alert('Auto-plan feature coming soon! This will generate a content calendar based on your performance data.');
+}
+
+// Initialize
+initCharts('overview');
+buildCalendar();
+loadPlatformCards();
+loadCourses();
+loadActivity();
+loadPosts();
+loadUpcoming();
+  </script>
+</body>
+</html>
