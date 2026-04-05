@@ -1,0 +1,3 @@
+#!/bin/bash
+# CreatorERP CLI Entry Point for Linux/Mac
+python "$(dirname "$0")/erp_cli.py" "$@"
