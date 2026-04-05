@@ -150,10 +150,10 @@ select.ai-select { padding: 8px 12px; border-radius: 6px; border: 0.5px solid va
     <!-- COURSES -->
     <div class="section" id="tab-courses">
       <div class="metric-grid">
-        <div class="metric-card"><div class="mlabel">Monthly revenue</div><div class="mvalue">$3,940</div><div class="mdelta">from Udemy</div></div>
-        <div class="metric-card"><div class="mlabel">Total students</div><div class="mvalue">2,190</div><div class="mdelta">+38 this month</div></div>
-        <div class="metric-card"><div class="mlabel">Avg rating</div><div class="mvalue">4.7</div><div class="mdelta">across all courses</div></div>
-        <div class="metric-card"><div class="mlabel">Completion rate</div><div class="mvalue">68%</div><div class="mdelta">+4% vs last month</div></div>
+        <div class="metric-card"><div class="mlabel">Monthly revenue</div><div class="mvalue" id="courses-monthly-revenue">$3,940</div><div class="mdelta">from Udemy</div></div>
+        <div class="metric-card"><div class="mlabel">Total students</div><div class="mvalue" id="courses-total-students">2,190</div><div class="mdelta">+38 this month</div></div>
+        <div class="metric-card"><div class="mlabel">Avg rating</div><div class="mvalue" id="courses-avg-rating">4.7</div><div class="mdelta">across all courses</div></div>
+        <div class="metric-card"><div class="mlabel">Completion rate</div><div class="mvalue" id="courses-completion-rate">68%</div><div class="mdelta">+4% vs last month</div></div>
       </div>
       <div class="stitle">Courses</div>
       <div class="ccard" id="courses-list"></div>
@@ -164,10 +164,10 @@ select.ai-select { padding: 8px 12px; border-radius: 6px; border: 0.5px solid va
     <!-- NEWSLETTER -->
     <div class="section" id="tab-newsletter">
       <div class="metric-grid">
-        <div class="metric-card"><div class="mlabel">Subscribers</div><div class="mvalue">8,340</div><div class="mdelta">+142 this week</div></div>
-        <div class="metric-card"><div class="mlabel">Open rate</div><div class="mvalue">58%</div><div class="mdelta">+6% above avg</div></div>
-        <div class="metric-card"><div class="mlabel">Click rate</div><div class="mvalue">14%</div><div class="mdelta">3x industry avg</div></div>
-        <div class="metric-card"><div class="mlabel">Churn rate</div><div class="mvalue">0.8%</div><div class="mdelta neu">monitor this</div></div>
+        <div class="metric-card"><div class="mlabel">Subscribers</div><div class="mvalue" id="newsletter-subscribers">8,340</div><div class="mdelta">+142 this week</div></div>
+        <div class="metric-card"><div class="mlabel">Open rate</div><div class="mvalue" id="newsletter-open-rate">58%</div><div class="mdelta">+6% above avg</div></div>
+        <div class="metric-card"><div class="mlabel">Click rate</div><div class="mvalue" id="newsletter-click-rate">14%</div><div class="mdelta">3x industry avg</div></div>
+        <div class="metric-card"><div class="mlabel">Churn rate</div><div class="mvalue" id="newsletter-churn-rate">0.8%</div><div class="mdelta neu">monitor this</div></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:1.5rem;">
         <div>
@@ -178,13 +178,7 @@ select.ai-select { padding: 8px 12px; border-radius: 6px; border: 0.5px solid va
           <div class="stitle">Last 5 issues</div>
           <table>
             <thead><tr><th>Issue</th><th>Opens</th><th>Clicks</th></tr></thead>
-            <tbody>
-              <tr><td>#48--Productivity</td><td style="color:var(--color-text-success);">62%</td><td>18%</td></tr>
-              <tr><td>#47--Tools roundup</td><td style="color:var(--color-text-success);">58%</td><td>14%</td></tr>
-              <tr><td>#46--Tutorial deep-dive</td><td>51%</td><td>11%</td></tr>
-              <tr><td>#45--Case study</td><td style="color:var(--color-text-success);">64%</td><td>21%</td></tr>
-              <tr><td>#44--Opinion piece</td><td>48%</td><td>9%</td></tr>
-            </tbody>
+            <tbody id="issues-table"></tbody>
           </table>
         </div>
       </div>
@@ -202,7 +196,7 @@ select.ai-select { padding: 8px 12px; border-radius: 6px; border: 0.5px solid va
     <!-- CALENDAR -->
     <div class="section" id="tab-calendar">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
-        <div style="font-size:15px;font-weight:500;color:var(--color-text-primary);">April 2026</div>
+        <div style="font-size:15px;font-weight:500;color:var(--color-text-primary);" id="calendar-month-label">April 2026</div>
         <button class="btn" onclick="autoPlan()">Auto-plan next month</button>
       </div>
       <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px;" id="calWeekdays"></div>
@@ -272,8 +266,34 @@ select.ai-select { padding: 8px 12px; border-radius: 6px; border: 0.5px solid va
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
   <script>
-const API_BASE = 'http://localhost:8000/api';
+const API_BASE = window.location.protocol.startsWith('http')
+  ? `${window.location.origin}/api`
+  : 'http://localhost:8000/api';
 const chartsInited = {};
+const chartInstances = {};
+let liveStream;
+let liveState = null;
+
+async function fetchJson(path, options = {}, timeoutMs = 10000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      signal: controller.signal
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`Request failed (${response.status}): ${body || response.statusText}`);
+    }
+
+    return await response.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 function switchTab(name, btn) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -286,55 +306,142 @@ function switchTab(name, btn) {
 function mkChart(id, type, data, opts) {
   const el = document.getElementById(id);
   if (!el) return;
-  new Chart(el, { type, data, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, ...opts } });
+  if (chartInstances[id]) chartInstances[id].destroy();
+  chartInstances[id] = new Chart(el, { type, data, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, ...opts } });
 }
 
 function initCharts(tab) {
-  if (chartsInited[tab]) return;
+  if (chartsInited[tab] && liveState) return;
   chartsInited[tab] = true;
+  const snapshot = liveState || getFallbackSnapshot();
 
   if (tab === 'overview') {
     mkChart('revenueChart', 'doughnut', {
-      datasets: [{ data: [3940, 620, 260], backgroundColor: ['#378ADD','#E24B4A','#1D9E75'], borderWidth: 0, hoverOffset: 4 }]
+      datasets: [{ data: [
+        snapshot.overview.revenue_sources.udemy,
+        snapshot.overview.revenue_sources.adsense,
+        snapshot.overview.revenue_sources.sponsors
+      ], backgroundColor: ['#378ADD','#E24B4A','#1D9E75'], borderWidth: 0, hoverOffset: 4 }]
     }, {});
     mkChart('audienceChart', 'bar', {
       labels: ['YouTube','Instagram','X'],
-      datasets: [{ data: [71200, 34200, 18400], backgroundColor: ['#E24B4A','#D85A30','#378ADD'], borderRadius: 4, borderWidth: 0 }]
+      datasets: [{ data: snapshot.overview.audience, backgroundColor: ['#E24B4A','#D85A30','#378ADD'], borderRadius: 4, borderWidth: 0 }]
     }, { scales: { y: { display: false }, x: { grid: { display: false }, ticks: { color: '#888' } } } });
   }
 
   if (tab === 'social') {
-    const wks = ['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12'];
+    const trend = snapshot.social.engagement_trend;
     mkChart('engagementChart', 'line', {
-      labels: wks,
+      labels: trend.labels,
       datasets: [
-        { label: 'YouTube', data: [120,145,160,175,200,215,210,240,258,275,295,320], borderColor: '#E24B4A', tension: 0.4, fill: false, pointRadius: 0, borderWidth: 2 },
-        { label: 'Instagram', data: [85,95,115,132,150,158,155,172,185,198,210,222], borderColor: '#D85A30', tension: 0.4, fill: false, pointRadius: 0, borderWidth: 2 },
-        { label: 'X', data: [40,50,55,62,70,78,75,88,90,102,112,122], borderColor: '#888780', tension: 0.4, fill: false, pointRadius: 0, borderWidth: 2 }
+        { label: 'YouTube', data: trend.youtube, borderColor: '#E24B4A', tension: 0.4, fill: false, pointRadius: 0, borderWidth: 2 },
+        { label: 'Instagram', data: trend.instagram, borderColor: '#D85A30', tension: 0.4, fill: false, pointRadius: 0, borderWidth: 2 },
+        { label: 'X', data: trend.x, borderColor: '#888780', tension: 0.4, fill: false, pointRadius: 0, borderWidth: 2 }
       ]
     }, { scales: { y: { grid: { color: 'rgba(128,128,128,0.12)' }, ticks: { color: '#888', font: { size: 11 } } }, x: { grid: { display: false }, ticks: { color: '#888', font: { size: 11 } } } } });
   }
 
   if (tab === 'courses') {
     mkChart('courseRevenueChart', 'bar', {
-      labels: ['Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'],
-      datasets: [{ data: [1800,2100,2400,3100,2800,3200,3600,3940], backgroundColor: '#378ADD', borderRadius: 4, borderWidth: 0 }]
+      labels: snapshot.courses.revenue_trend.labels,
+      datasets: [{ data: snapshot.courses.revenue_trend.data, backgroundColor: '#378ADD', borderRadius: 4, borderWidth: 0 }]
     }, { scales: { y: { grid: { color: 'rgba(128,128,128,0.12)' }, ticks: { color: '#888', font: { size: 11 }, callback: v => '$' + (v/1000).toFixed(1) + 'K' } }, x: { grid: { display: false }, ticks: { color: '#888', font: { size: 11 }, autoSkip: false } } } });
   }
 
   if (tab === 'newsletter') {
     mkChart('subsChart', 'line', {
-      labels: ['Oct','Nov','Dec','Jan','Feb','Mar','Apr'],
-      datasets: [{ data: [4200,4900,5500,6100,6900,7800,8340], borderColor: '#1D9E75', fill: true, backgroundColor: 'rgba(29,158,117,0.08)', tension: 0.4, pointRadius: 2, borderWidth: 2 }]
+      labels: snapshot.newsletter.growth.labels,
+      datasets: [{ data: snapshot.newsletter.growth.data, borderColor: '#1D9E75', fill: true, backgroundColor: 'rgba(29,158,117,0.08)', tension: 0.4, pointRadius: 2, borderWidth: 2 }]
     }, { scales: { y: { grid: { color: 'rgba(128,128,128,0.12)' }, ticks: { color: '#888', font: { size: 11 }, callback: v => (v/1000).toFixed(1) + 'K' } }, x: { grid: { display: false }, ticks: { color: '#888', font: { size: 11 } } } } });
+    const sourceLabels = Object.keys(snapshot.newsletter.sources);
     mkChart('sourceChart', 'doughnut', {
-      datasets: [{ data: [38,28,18,11,5], backgroundColor: ['#E24B4A','#D85A30','#888780','#A435F0','#B4B2A9'], borderWidth: 0, hoverOffset: 4 }]
+      labels: sourceLabels,
+      datasets: [{ data: sourceLabels.map(label => snapshot.newsletter.sources[label]), backgroundColor: ['#E24B4A','#D85A30','#888780','#A435F0','#B4B2A9'], borderWidth: 0, hoverOffset: 4 }]
     }, {});
   }
 }
 
-function buildCalendar() {
+function getFallbackSnapshot() {
+  return {
+    overview: {
+      metrics: { total_reach: '124K', monthly_revenue: '$4,820', newsletter_subs: '8,340', course_students: '2,190' },
+      changes: { reach_change: '+3.2% this week', revenue_change: '+12% vs last month', subs_change: '+142 this week', students_change: '+38 this month' },
+      recent_activity: [
+        { event: 'New video published', platform: 'YouTube', time: '2h ago', impact: '+480 views', positive: true },
+        { event: 'Newsletter #48 sent', platform: 'Email', time: 'Yesterday', impact: '62% open rate', positive: true },
+        { event: '12 new enrollments', platform: 'Udemy', time: 'Yesterday', impact: '+$180 revenue', positive: true },
+        { event: 'Thread went viral', platform: 'X', time: '2d ago', impact: '+2.4K impressions', positive: true },
+        { event: 'Reel published', platform: 'Instagram', time: '3d ago', impact: '820 plays', positive: false }
+      ],
+      revenue_sources: { udemy: 3940, adsense: 620, sponsors: 260 },
+      audience: [71200, 34200, 18400]
+    },
+    social: {
+      platforms: [
+        { platform: 'X', handle: '@yourusername', followers: 18400, impressions_7d: 42000, engagements: 1240, engagement_rate: 2.9, profile_visits: 3100 },
+        { platform: 'Instagram', handle: '@yourusername', followers: 34200, impressions_7d: 67000, engagements: 4820, engagement_rate: 6.8, profile_visits: 2100 },
+        { platform: 'YouTube', handle: 'Your Channel', followers: 71200, impressions_7d: 184000, engagements: 9200, engagement_rate: 4.7, profile_visits: 0 }
+      ],
+      top_posts: [
+        { content: 'Thread: productivity hacks', platform: 'X', reach: 24000, engagement_rate: 4.1 },
+        { content: 'Behind the scenes reel', platform: 'Instagram', reach: 18000, engagement_rate: 6.8 },
+        { content: 'Tutorial: build X in 10 min', platform: 'YouTube', reach: 52000, engagement_rate: 7.2 },
+        { content: 'Carousel: 5 tools I use', platform: 'Instagram', reach: 11000, engagement_rate: 3.4 }
+      ],
+      engagement_trend: {
+        labels: ['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12'],
+        youtube: [120,145,160,175,200,215,210,240,258,275,295,320],
+        instagram: [85,95,115,132,150,158,155,172,185,198,210,222],
+        x: [40,50,55,62,70,78,75,88,90,102,112,122]
+      }
+    },
+    courses: {
+      metrics: { monthly_revenue: '$3,940', total_students: '2,190', avg_rating: '4.7', completion_rate: '68%' },
+      courses: [
+        { title: 'Complete guide to X', hours: 8.5, students: 840, rating: 4.8, revenue: 1680, completion: 84, status: 'Bestseller' },
+        { title: "Beginner's crash course", hours: 3.2, students: 920, rating: 4.6, revenue: 1470, completion: 92, status: 'Hot' },
+        { title: 'Advanced masterclass', hours: 12, students: 430, rating: 4.7, revenue: 790, completion: 43, status: 'Growing' }
+      ],
+      revenue_trend: { labels: ['Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'], data: [1800,2100,2400,3100,2800,3200,3600,3940] }
+    },
+    newsletter: {
+      metrics: { subscribers: '8,340', open_rate: '58%', click_rate: '14%', churn_rate: '0.8%' },
+      issues: [
+        { issue_number: 48, title: 'Productivity', open_rate: 62, click_rate: 18 },
+        { issue_number: 47, title: 'Tools roundup', open_rate: 58, click_rate: 14 },
+        { issue_number: 46, title: 'Tutorial deep-dive', open_rate: 51, click_rate: 11 },
+        { issue_number: 45, title: 'Case study', open_rate: 64, click_rate: 21 },
+        { issue_number: 44, title: 'Opinion piece', open_rate: 48, click_rate: 9 }
+      ],
+      growth: { labels: ['Oct','Nov','Dec','Jan','Feb','Mar','Apr'], data: [4200,4900,5500,6100,6900,7800,8340] },
+      sources: { YouTube: 38, Instagram: 28, X: 18, Udemy: 11, Organic: 5 }
+    },
+    calendar: {
+      month: { year: 2026, month: 4, content_days: [3,5,7,8,10,12,14,15,17,19,21,22,24,26,28,29] },
+      upcoming: [
+        { id: 1, title: 'Video: 10 tools for creators', platform: 'YouTube', scheduled_date: '2026-04-07', status: 'Draft' },
+        { id: 2, title: 'Newsletter #49', platform: 'Email', scheduled_date: '2026-04-08', status: 'Ready' },
+        { id: 3, title: 'Thread: 1-year lessons', platform: 'X', scheduled_date: '2026-04-09', status: 'Draft' },
+        { id: 4, title: 'Quick tip reel', platform: 'Instagram', scheduled_date: '2026-04-10', status: 'Scheduled' },
+        { id: 5, title: 'Tutorial: beginner series ep.3', platform: 'YouTube', scheduled_date: '2026-04-14', status: 'Idea' }
+      ]
+    }
+  };
+}
+
+function formatCompactNumber(value) {
+  if (typeof value === 'string') return value;
+  return new Intl.NumberFormat().format(value);
+}
+
+function formatCurrency(value) {
+  if (typeof value === 'string') return value;
+  return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
+}
+
+function buildCalendar(contentDays = [3,5,7,8,10,12,14,15,17,19,21,22,24,26,28,29], today = new Date().getDate(), monthMeta = { year: 2026, month: 4 }) {
   const wd = document.getElementById('calWeekdays');
+  wd.innerHTML = '';
   ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d => {
     const el = document.createElement('div');
     el.style.cssText = 'text-align:center;font-size:10px;color:var(--color-text-secondary);padding:4px 0;';
@@ -343,16 +450,19 @@ function buildCalendar() {
   });
 
   const grid = document.getElementById('calGrid');
-  const contentDays = [3,5,7,8,10,12,14,15,17,19,21,22,24,26,28,29];
-  const today = 5;
-  const startDay = 3;
+  grid.innerHTML = '';
+  const label = document.getElementById('calendar-month-label');
+  const monthDate = new Date(monthMeta.year, monthMeta.month - 1, 1);
+  label.textContent = monthDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  const startDay = monthDate.getDay();
+  const daysInMonth = new Date(monthMeta.year, monthMeta.month, 0).getDate();
 
   for (let i = 0; i < startDay; i++) {
     const e = document.createElement('div');
     e.style.cssText = 'aspect-ratio:1;';
     grid.appendChild(e);
   }
-  for (let d = 1; d <= 30; d++) {
+  for (let d = 1; d <= daysInMonth; d++) {
     const cell = document.createElement('div');
     const hasCont = contentDays.includes(d);
     const isToday = d === today;
@@ -362,94 +472,142 @@ function buildCalendar() {
   }
 }
 
-function loadPlatformCards() {
-  const platforms = [
-    { name: 'X', handle: '@yourusername', followers: '18,400', impressions: '42K', engagements: '1,240', rate: '2.9%', visits: '3,100', bg: '#000', fg: '#fff' },
-    { name: 'Instagram', handle: '@yourusername', followers: '34,200', impressions: '67K', engagements: '4,820', rate: '6.8%', visits: '2,100', bg: '#E1306C', fg: '#fff' },
-    { name: 'YouTube', handle: 'Your Channel', followers: '71,200', impressions: '184K', engagements: '9,200', rate: '4.7%', visits: '-', bg: '#FF0000', fg: '#fff' }
-  ];
+function renderOverview(snapshot) {
+  document.getElementById('total-reach').textContent = snapshot.metrics.total_reach;
+  document.getElementById('monthly-revenue').textContent = snapshot.metrics.monthly_revenue;
+  document.getElementById('newsletter-subs').textContent = snapshot.metrics.newsletter_subs;
+  document.getElementById('course-students').textContent = snapshot.metrics.course_students;
+  document.getElementById('reach-change').textContent = snapshot.changes.reach_change;
+  document.getElementById('revenue-change').textContent = snapshot.changes.revenue_change;
+  document.getElementById('subs-change').textContent = snapshot.changes.subs_change;
+  document.getElementById('students-change').textContent = snapshot.changes.students_change;
+
+  const tbody = document.querySelector('#activity-table tbody');
+  tbody.innerHTML = snapshot.recent_activity.map(a =>
+    `<tr><td>${a.event}</td><td>${a.platform}</td><td>${a.time}</td><td style="color:${a.positive ? 'var(--color-text-success)' : 'var(--color-text-secondary)'};">${a.impact}</td></tr>`
+  ).join('');
+}
+
+function loadPlatformCards(platforms) {
   const container = document.getElementById('platform-cards');
+  container.innerHTML = '';
   platforms.forEach(p => {
+    const iconStyles = p.platform === 'X'
+      ? { bg: '#000', fg: '#fff' }
+      : p.platform === 'Instagram'
+        ? { bg: '#E1306C', fg: '#fff' }
+        : { bg: '#FF0000', fg: '#fff' };
     container.innerHTML += `
       <div class="pcard">
         <div class="pheader">
-          <div class="picon" style="background:${p.bg};color:${p.fg};">${p.name.substring(0,2)}</div>
-          <div><div class="pname">${p.name}</div><div class="phandle">${p.handle}</div></div>
+          <div class="picon" style="background:${iconStyles.bg};color:${iconStyles.fg};">${p.platform.substring(0,2)}</div>
+          <div><div class="pname">${p.platform}</div><div class="phandle">${p.handle}</div></div>
         </div>
-        <div class="sr"><span class="sl">Followers</span><span class="sv">${p.followers}</span></div>
-        <div class="sr"><span class="sl">Impressions (7d)</span><span class="sv">${p.impressions}</span></div>
-        <div class="sr"><span class="sl">Engagements</span><span class="sv">${p.engagements}</span></div>
-        <div class="sr"><span class="sl">Eng. rate</span><span class="sv" style="color:var(--color-text-success);">${p.rate}</span></div>
-        <div class="sr"><span class="sl">Profile visits</span><span class="sv">${p.visits}</span></div>
+        <div class="sr"><span class="sl">Followers</span><span class="sv">${formatCompactNumber(p.followers)}</span></div>
+        <div class="sr"><span class="sl">Impressions (7d)</span><span class="sv">${formatCompactNumber(p.impressions_7d)}</span></div>
+        <div class="sr"><span class="sl">Engagements</span><span class="sv">${formatCompactNumber(p.engagements)}</span></div>
+        <div class="sr"><span class="sl">Eng. rate</span><span class="sv" style="color:var(--color-text-success);">${p.engagement_rate}%</span></div>
+        <div class="sr"><span class="sl">Profile visits</span><span class="sv">${formatCompactNumber(p.profile_visits)}</span></div>
       </div>`;
   });
 }
 
-function loadCourses() {
-  const courses = [
-    { title: 'Complete guide to X', hours: '8.5', students: 840, rating: 4.8, revenue: '$1,680', badge: 'Bestseller', pct: 84 },
-    { title: "Beginner's crash course", hours: '3.2', students: 920, rating: 4.6, revenue: '$1,470', badge: 'Hot', pct: 92 },
-    { title: 'Advanced masterclass', hours: '12', students: 430, rating: 4.7, revenue: '$790', badge: 'Growing', pct: 43 }
-  ];
+function renderCourses(snapshot) {
+  document.getElementById('courses-monthly-revenue').textContent = snapshot.metrics.monthly_revenue;
+  document.getElementById('courses-total-students').textContent = snapshot.metrics.total_students;
+  document.getElementById('courses-avg-rating').textContent = snapshot.metrics.avg_rating;
+  document.getElementById('courses-completion-rate').textContent = snapshot.metrics.completion_rate;
+
   const container = document.getElementById('courses-list');
-  courses.forEach(c => {
-    const badgeClass = c.badge === 'Bestseller' ? 'bg' : 'ba';
-    const barColor = c.badge === 'Bestseller' ? '#378ADD' : c.badge === 'Hot' ? '#1D9E75' : '#BA7517';
+  container.innerHTML = '';
+  snapshot.courses.forEach(c => {
+    const badgeClass = c.status === 'Bestseller' ? 'bg' : 'ba';
+    const barColor = c.status === 'Bestseller' ? '#378ADD' : c.status === 'Hot' ? '#1D9E75' : '#BA7517';
     container.innerHTML += `
       <div class="crow">
         <div style="flex:1;">
           <div style="font-size:13px;font-weight:500;margin-bottom:3px;">${c.title}</div>
-          <div style="font-size:11px;color:var(--color-text-secondary);">${c.hours} hrs -- ${c.students} students</div>
-          <div class="pbar"><div class="pfill" style="width:${c.pct}%;background:${barColor};"></div></div>
+          <div style="font-size:11px;color:var(--color-text-secondary);">${c.hours} hrs -- ${formatCompactNumber(c.students)} students</div>
+          <div class="pbar"><div class="pfill" style="width:${c.completion}%;background:${barColor};"></div></div>
         </div>
         <div style="text-align:right;min-width:80px;">
-          <div style="font-size:14px;font-weight:500;">${c.revenue}</div>
+          <div style="font-size:14px;font-weight:500;">${formatCurrency(c.revenue)}</div>
           <div style="font-size:11px;color:var(--color-text-secondary);">-- ${c.rating}</div>
-          <span class="badge ${badgeClass}">${c.badge}</span>
+          <span class="badge ${badgeClass}">${c.status}</span>
         </div>
       </div>`;
   });
 }
 
-function loadActivity() {
-  const activity = [
-    { event: 'New video published', platform: 'YouTube', time: '2h ago', impact: '+480 views', positive: true },
-    { event: 'Newsletter #48 sent', platform: 'Email', time: 'Yesterday', impact: '62% open rate', positive: true },
-    { event: '12 new enrollments', platform: 'Udemy', time: 'Yesterday', impact: '+$180 revenue', positive: true },
-    { event: 'Thread went viral', platform: 'X', time: '2d ago', impact: '+2.4K impressions', positive: true },
-    { event: 'Reel published', platform: 'Instagram', time: '3d ago', impact: '820 plays', positive: false }
-  ];
-  const tbody = document.querySelector('#activity-table tbody');
-  activity.forEach(a => {
-    tbody.innerHTML += `<tr><td>${a.event}</td><td>${a.platform}</td><td>${a.time}</td><td style="color:${a.positive ? 'var(--color-text-success)' : 'var(--color-text-secondary)'};">${a.impact}</td></tr>`;
-  });
-}
-
-function loadPosts() {
-  const posts = [
-    { content: 'Thread: productivity hacks', platform: 'X', reach: '24K', rate: '4.1%', positive: true },
-    { content: 'Behind the scenes reel', platform: 'Instagram', reach: '18K', rate: '6.8%', positive: true },
-    { content: 'Tutorial: build X in 10 min', platform: 'YouTube', reach: '52K', rate: '7.2%', positive: true },
-    { content: 'Carousel: 5 tools I use', platform: 'Instagram', reach: '11K', rate: '3.4%', positive: false }
-  ];
+function loadPosts(posts) {
   const tbody = document.querySelector('#posts-table tbody');
-  posts.forEach(p => {
-    tbody.innerHTML += `<tr><td>${p.content}</td><td>${p.platform}</td><td>${p.reach}</td><td style="color:${p.positive ? 'var(--color-text-success)' : 'var(--color-text-secondary)'};">${p.rate}</td></tr>`;
-  });
+  tbody.innerHTML = posts.map(p =>
+    `<tr><td>${p.content}</td><td>${p.platform}</td><td>${formatCompactNumber(p.reach)}</td><td style="color:${p.engagement_rate >= 5 ? 'var(--color-text-success)' : 'var(--color-text-secondary)'};">${p.engagement_rate}%</td></tr>`
+  ).join('');
 }
 
-function loadUpcoming() {
-  const upcoming = [
-    { date: 'Apr 7', content: 'Video: 10 tools for creators', platform: 'YouTube', status: 'Draft', statusColor: 'var(--color-text-warning)' },
-    { date: 'Apr 8', content: 'Newsletter #49', platform: 'Email', status: 'Ready', statusColor: 'var(--color-text-success)' },
-    { date: 'Apr 9', content: 'Thread: 1-year lessons', platform: 'X', status: 'Draft', statusColor: 'var(--color-text-warning)' },
-    { date: 'Apr 10', content: 'Quick tip reel', platform: 'Instagram', status: 'Scheduled', statusColor: 'var(--color-text-success)' },
-    { date: 'Apr 14', content: 'Tutorial: beginner series ep.3', platform: 'YouTube', status: 'Idea', statusColor: 'var(--color-text-secondary)' }
-  ];
+function renderNewsletter(snapshot) {
+  document.getElementById('newsletter-subscribers').textContent = snapshot.metrics.subscribers;
+  document.getElementById('newsletter-open-rate').textContent = snapshot.metrics.open_rate;
+  document.getElementById('newsletter-click-rate').textContent = snapshot.metrics.click_rate;
+  document.getElementById('newsletter-churn-rate').textContent = snapshot.metrics.churn_rate;
+
+  const issuesTable = document.getElementById('issues-table');
+  issuesTable.innerHTML = snapshot.issues.map(issue =>
+    `<tr><td>#${issue.issue_number}--${issue.title}</td><td style="color:${issue.open_rate >= 58 ? 'var(--color-text-success)' : 'var(--color-text-primary)'};">${issue.open_rate}%</td><td>${issue.click_rate}%</td></tr>`
+  ).join('');
+}
+
+function loadUpcoming(upcoming) {
   const tbody = document.querySelector('#upcoming-table tbody');
-  upcoming.forEach(u => {
-    tbody.innerHTML += `<tr><td>${u.date}</td><td>${u.content}</td><td>${u.platform}</td><td style="color:${u.statusColor};">${u.status}</td></tr>`;
-  });
+  tbody.innerHTML = upcoming.map(u => {
+    const statusColor = u.status === 'Ready' || u.status === 'Scheduled'
+      ? 'var(--color-text-success)'
+      : u.status === 'Draft' || u.status === 'Planning'
+        ? 'var(--color-text-warning)'
+        : 'var(--color-text-secondary)';
+    const dateLabel = new Date(u.scheduled_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    return `<tr><td>${dateLabel}</td><td>${u.title}</td><td>${u.platform}</td><td style="color:${statusColor};">${u.status}</td></tr>`;
+  }).join('');
+}
+
+function renderLiveSnapshot(snapshot) {
+  liveState = snapshot;
+  renderOverview(snapshot.overview);
+  loadPlatformCards(snapshot.social.platforms);
+  loadPosts(snapshot.social.top_posts);
+  renderCourses(snapshot.courses);
+  renderNewsletter(snapshot.newsletter);
+  buildCalendar(snapshot.calendar.month.content_days, new Date().getDate(), snapshot.calendar.month);
+  loadUpcoming(snapshot.calendar.upcoming);
+  chartsInited.overview = false;
+  chartsInited.social = false;
+  chartsInited.courses = false;
+  chartsInited.newsletter = false;
+  ['overview', 'social', 'courses', 'newsletter'].forEach(initCharts);
+}
+
+async function startSyntheticStream() {
+  try {
+    const initialSnapshot = await fetchJson('/live/snapshot');
+    renderLiveSnapshot(initialSnapshot);
+  } catch (e) {
+    console.error('Unable to load initial synthetic snapshot', e);
+  }
+
+  if (liveStream) liveStream.close();
+  liveStream = new EventSource(`${API_BASE}/live/stream`);
+  liveStream.onmessage = (event) => {
+    try {
+      renderLiveSnapshot(JSON.parse(event.data));
+    } catch (e) {
+      console.error('Invalid live snapshot payload', e);
+    }
+  };
+  liveStream.onerror = () => {
+    liveStream.close();
+    setTimeout(startSyntheticStream, 3000);
+  };
 }
 
 function updateProvider() {
@@ -482,11 +640,11 @@ async function analyzeDashboard() {
   resultDiv.textContent = 'Analyzing dashboard data...';
   
   try {
-    const resp = await fetch(`${API_BASE}/ai/analyze/dashboard`, { method: 'POST' });
-    const data = await resp.json();
+    const data = await fetchJson('/ai/analyze/dashboard', { method: 'POST' }, 15000);
     resultDiv.textContent = data.result || JSON.stringify(data, null, 2);
   } catch (e) {
-    resultDiv.textContent = 'Error: Could not connect to AI service. Ensure backend is running and AI provider is configured.\n\n' + e.message;
+    const detail = e.name === 'AbortError' ? 'The AI request timed out. Check that your provider is running and reachable.' : e.message;
+    resultDiv.textContent = 'Error: Could not connect to AI service. Ensure backend is running and AI provider is configured.\n\n' + detail;
   }
 }
 
@@ -518,15 +676,15 @@ async function runAIQuery() {
   resultDiv.textContent = 'Processing...';
   
   try {
-    const resp = await fetch(`${API_BASE}/ai/investigate`, {
+    const data = await fetchJson('/ai/investigate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query, provider, model })
-    });
-    const data = await resp.json();
+    }, 15000);
     resultDiv.textContent = data.result || JSON.stringify(data, null, 2);
   } catch (e) {
-    resultDiv.textContent = 'Error: Could not connect to AI service. Ensure backend is running.\n\n' + e.message;
+    const detail = e.name === 'AbortError' ? 'The AI request timed out. Check that your provider is running and reachable.' : e.message;
+    resultDiv.textContent = 'Error: Could not connect to AI service. Ensure backend is running.\n\n' + detail;
   }
 }
 
@@ -535,13 +693,8 @@ function autoPlan() {
 }
 
 // Initialize
-initCharts('overview');
-buildCalendar();
-loadPlatformCards();
-loadCourses();
-loadActivity();
-loadPosts();
-loadUpcoming();
+renderLiveSnapshot(getFallbackSnapshot());
+startSyntheticStream();
   </script>
 </body>
 </html>

@@ -10,6 +10,8 @@ import json
 import asyncio
 from config import settings
 
+REQUEST_TIMEOUT_SECONDS = 15
+
 
 class Investigation(Base):
     __tablename__ = "investigations"
@@ -91,7 +93,8 @@ class AIClient:
         try:
             import aiohttp
 
-            async with aiohttp.ClientSession() as session:
+            timeout = aiohttp.ClientTimeout(total=REQUEST_TIMEOUT_SECONDS)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
                 payload = {
                     "model": model_name,
                     "prompt": self._build_prompt(query, context),
@@ -215,7 +218,8 @@ class AIClient:
                 "max_tokens": 2000,
             }
 
-            async with aiohttp.ClientSession() as session:
+            timeout = aiohttp.ClientTimeout(total=REQUEST_TIMEOUT_SECONDS)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
                 async with session.post(
                     f"{base_url}/chat/completions", json=payload, headers=headers
                 ) as resp:
@@ -273,7 +277,8 @@ class AIClient:
                 ],
             }
 
-            async with aiohttp.ClientSession() as session:
+            timeout = aiohttp.ClientTimeout(total=REQUEST_TIMEOUT_SECONDS)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
                 async with session.post(
                     f"{base_url}/chat/completions", json=payload, headers=headers
                 ) as resp:
